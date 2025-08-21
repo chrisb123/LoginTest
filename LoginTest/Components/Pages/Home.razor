@@ -1,0 +1,49 @@
+﻿@page "/"
+@using LoginTest.Controller
+@using LoginTest.Data.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject AccountController accountController
+@inject UserManager<AppUser> userManager
+@inject SignInManager<AppUser> signInManager
+@rendermode InteractiveServer
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+<hr />
+User:<input @bind="userName"/>
+Pass:<input @bind="passWord" />
+<button @onclick="register">Register</button>
+<button @onclick="login">Login</button>
+
+<AuthorizeView>
+	<Authorized>
+		<p>Hello logged in</p>
+	</Authorized>
+	<NotAuthorized>
+		<p>Not logged in</p>
+	</NotAuthorized>
+</AuthorizeView>
+
+@code {
+	string userName;
+	string passWord;
+
+	public void register()
+	{
+		accountController.Register(userName, passWord);
+	}
+	public async Task login()
+	{
+		var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == userName.ToLower());
+		var result = await signInManager.CheckPasswordSignInAsync(user, passWord, false);
+		if (result.Succeeded)
+		{
+			Console.WriteLine("User Signed in");
+		}
+	}
+}
