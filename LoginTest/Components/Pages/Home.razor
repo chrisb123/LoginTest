@@ -7,6 +7,7 @@
 @inject AccountController accountController
 @inject UserManager<AppUser> userManager
 @inject SignInManager<AppUser> signInManager
+@inject AuthenticationStateProvider ASP
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -19,31 +20,41 @@ User:<input @bind="userName"/>
 Pass:<input @bind="passWord" />
 <button @onclick="register">Register</button>
 <button @onclick="login">Login</button>
+<p>Status: @status</p>
 
 <AuthorizeView>
 	<Authorized>
-		<p>Hello logged in</p>
+		<p>User is authorised</p>
 	</Authorized>
 	<NotAuthorized>
-		<p>Not logged in</p>
+		<p>User not authorised</p>
 	</NotAuthorized>
 </AuthorizeView>
 
 @code {
 	string userName;
 	string passWord;
+	string status;
 
 	public void register()
 	{
 		accountController.Register(userName, passWord);
 	}
+
 	public async Task login()
 	{
 		var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == userName.ToLower());
+		if (user == null) { 
+			status = "User not found"; 
+			return; 
+		}
 		var result = await signInManager.CheckPasswordSignInAsync(user, passWord, false);
 		if (result.Succeeded)
 		{
-			Console.WriteLine("User Signed in");
+			status = "User signed in";
+		} else
+		{
+			status = "User NOT signed in";
 		}
 	}
 }
