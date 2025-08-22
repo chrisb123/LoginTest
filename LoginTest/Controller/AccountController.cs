@@ -29,15 +29,19 @@ namespace LoginTest.Controller
 		{
 			return await _userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == user.ToLower());
 		}
-		public async Task<IList<string>> getUserRoles(AppUser user)
+		public async Task<List<string>> getRoles(string user)
 		{
-			return await _userManager.GetRolesAsync(user);
-			
+			AppUser appuser = await getUser(user);
+			return (List<string>)await _userManager.GetRolesAsync(appuser);
 		}
 		public async Task addRole(string role)
 		{
 			var newRole = new IdentityRole(role);
 			await _roleManager.CreateAsync(newRole);
+		}
+		public async Task<List<AppUser>> getUsers()
+		{
+			return await _userManager.Users.ToListAsync();
 		}
 		public async Task<List<IdentityRole>> getRoles()
 		{
@@ -48,8 +52,12 @@ namespace LoginTest.Controller
 			IdentityRole newRole = await _roleManager.FindByNameAsync(role);
 			await _roleManager.DeleteAsync(newRole);
 		}
-
-
+		public async Task assignRole(string user, string role)
+		{
+			AppUser appuser = await getUser(user);
+			await _userManager.AddToRoleAsync(appuser, role);
+		}
+		
 	}
 
 }

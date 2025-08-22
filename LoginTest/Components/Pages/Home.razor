@@ -41,6 +41,24 @@ Roles
 	<br />@xrole
 }
 <hr />
+Users
+User:<input @bind="user2" />Role:<input @bind="role2" />
+<button @onclick="assignRole">Assign Role to user</button>
+<button @onclick="getUserRoles">Get User Roles</button>
+
+@foreach (var xuser in users)
+{
+	<br />
+	@xuser
+}
+<br />
+UserRoles
+@foreach (var userRole in userRoles)
+{
+	@userRole
+}
+
+<hr />
 <p>Authorize View</p>
 <AuthorizeView>
 	<Authorized>
@@ -58,11 +76,17 @@ Roles
 	private string? status { get; set; }
 	private string? currentAuthState { get; set; }
 	private string? role { get; set; }
+	private string user2 { get; set; }
+	private List<string> userRoles { get; set; } = new();
+	private string role2 { get; set; }
 	private List<IdentityRole>? roles = new();
+	private List<AppUser>? users = new();
 
 	protected override async Task OnInitializedAsync()
 	{
 		roles = await accountController.getRoles();
+		users = await accountController.getUsers();
+
 		await base.OnInitializedAsync();
 	}
 
@@ -130,6 +154,14 @@ Roles
 	{
 		await accountController.deleteRole(role);
 		NavigationManager.Refresh(true);
+	}
+	public async Task assignRole()
+	{
+		await accountController.assignRole(user2, role2);
+	}
+	public async Task getUserRoles()
+	{
+		userRoles = await accountController.getRoles(user2);
 	}
 
 	private sealed class InputModel
