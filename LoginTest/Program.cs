@@ -17,7 +17,7 @@ builder.Services.AddAuthentication(options =>
 {
 	options.DefaultScheme = IdentityConstants.ApplicationScheme;
 	options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
-});
+}).AddIdentityCookies();
 
 var serverVersion = new MySqlServerVersion(new Version(11, 4, 2));
 builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(builder.Configuration.GetConnectionString("default"), serverVersion)

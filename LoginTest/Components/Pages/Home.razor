@@ -4,10 +4,12 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
 @inject AccountController accountController
 @inject UserManager<AppUser> userManager
 @inject SignInManager<AppUser> signInManager
 @inject AuthenticationStateProvider ASP
+@inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -16,12 +18,30 @@
 
 Welcome to your new app.
 <hr />
-User:<input @bind="userName"/>
-Pass:<input @bind="passWord" />
-<button @onclick="register">Register</button>
-<button @onclick="login">Login</button>
-<p>Status: @status</p>
 
+<EditForm Model="input" method="post" FormName="login">
+	<DataAnnotationsValidator />
+	<InputText @bind-Value="input.userName"/><br />
+	<ValidationMessage For="() => input.userName" />
+	<InputText @bind-Value="input.passWord" /><br />
+	<ValidationMessage For="() => input.passWord" />
+	<button type="submit" @onclick="loginAsync">Login</button><br />
+	<button type="submit" @onclick="registerAsync">Register</button>
+</EditForm>
+<button @onclick="refreshAuthStateAsync">Refresh Auth State</button>
+<p>Status: @status</p>
+<p>Auth state: @currentAuthState</p>
+<hr />
+Roles
+<input @bind="role" />
+<button @onclick="addRole">Add Role</button>
+<button @onclick="deleteRole">Delete Role</button>
+@foreach(var xrole in roles)
+{
+	<br />@xrole
+}
+<hr />
+<p>Authorize View</p>
 <AuthorizeView>
 	<Authorized>
 		<p>User is authorised</p>
@@ -32,23 +52,47 @@ Pass:<input @bind="passWord" />
 </AuthorizeView>
 
 @code {
-	string userName;
-	string passWord;
-	string status;
+	[SupplyParameterFromForm]
+	private InputModel input { get; set; } = new();
 
-	public void register()
+	private string? status { get; set; }
+	private string? currentAuthState { get; set; }
+	private string? role { get; set; }
+	private List<IdentityRole>? roles = new();
+
+	protected override async Task OnInitializedAsync()
 	{
-		accountController.Register(userName, passWord);
+		roles = await accountController.getRoles();
+		await base.OnInitializedAsync();
 	}
 
-	public async Task login()
+	public async Task registerAsync()
 	{
-		var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == userName.ToLower());
+		if (await accountController.getUser(input.userName) is null)
+		{
+			if ( (await accountController.register(input.userName, input.passWord)).Succeeded)
+			{
+				status = "Registered user";
+			} else
+			{
+				status = "Registration failed";
+			}
+
+		} else
+		{
+			status = "Cant register, user exists";
+		}
+	}
+
+
+	public async Task loginAsync()
+	{
+		var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == input.userName.ToLower());
 		if (user == null) { 
 			status = "User not found"; 
 			return; 
 		}
-		var result = await signInManager.CheckPasswordSignInAsync(user, passWord, false);
+		var result = await signInManager.CheckPasswordSignInAsync(user, input.passWord, false);
 		if (result.Succeeded)
 		{
 			status = "User signed in";
@@ -56,5 +100,44 @@ Pass:<input @bind="passWord" />
 		{
 			status = "User NOT signed in";
 		}
+
+		var s = await getAuthStateAsync(ASP);
+	}
+	public async Task refreshAuthStateAsync()
+	{
+		var s = await getAuthStateAsync(ASP);
+		currentAuthState = s;
+	}
+
+	public async Task<string> getAuthStateAsync(AuthenticationStateProvider authStateProvider)
+	{
+		var authState = await authStateProvider.GetAuthenticationStateAsync();
+		var user = authState.User;
+		if (user.Identity is not null && user.Identity.IsAuthenticated)
+		{
+			return $"{user.Identity.Name} is authenticated";
+		} else
+		{
+			return "No user authenticated";
+		}
+	}
+	public async Task addRole()
+	{
+		await accountController.addRole(role);
+		NavigationManager.Refresh(true);
+	}
+	public async Task deleteRole()
+	{
+		await accountController.deleteRole(role);
+		NavigationManager.Refresh(true);
+	}
+
+	private sealed class InputModel
+	{
+		[Required]
+		public string userName { get; set; } = "";
+
+		[Required]
+		public string passWord { get; set; } = "";
 	}
 }
