@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using LoginTest.Controller
 @using LoginTest.Data.Models
+@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
@@ -31,19 +32,24 @@ Welcome to your new app.
 <button @onclick="refreshAuthStateAsync">Refresh Auth State</button>
 <p>Status: @status</p>
 <p>Auth state: @currentAuthState</p>
+
 <hr />
-Roles
-<input @bind="role" />
+Roles<br />
+Role:<input @bind="role" />
 <button @onclick="addRole">Add Role</button>
-<button @onclick="deleteRole">Delete Role</button>
-@foreach(var xrole in roles)
+<table>
+@for(int i =0 ;i<roles.Count;i++)
 {
-	<br />@xrole
+	var j = i;
+	<tr><td>@roles[i]</td><td><button @onclick="() => delRole(j)">Delete</button></td></tr>
 }
+</table>
+
 <hr />
-Users
-User:<input @bind="user2" />Role:<input @bind="role2" />
+Users<br />
 <button @onclick="assignRole">Assign Role to user</button>
+Role:<input @bind="role2" />
+User:<input @bind="user2" />
 <button @onclick="getUserRoles">Get User Roles</button>
 
 @foreach (var xuser in users)
@@ -59,6 +65,15 @@ UserRoles
 }
 
 <hr />
+Add claims <br />
+Label:
+<input @bind="claim.label" />
+Type:<input @bind="claim.type" />
+Value:<input @bind="claim.value" />
+<button @onclick="addRoleClaim">Add claim to role</button>
+<button @onclick="addUserClaim">Add claim to user</button>
+
+<hr />
 <p>Authorize View</p>
 <AuthorizeView>
 	<Authorized>
@@ -70,8 +85,13 @@ UserRoles
 </AuthorizeView>
 
 @code {
+	[CascadingParameter]
+	private HttpContext HttpContext { get; set; } = default!;
+
 	[SupplyParameterFromForm]
 	private InputModel input { get; set; } = new();
+	[SupplyParameterFromForm]
+	private ClaimModel claim { get; set; } = new();
 
 	private string? status { get; set; }
 	private string? currentAuthState { get; set; }
@@ -81,6 +101,15 @@ UserRoles
 	private string role2 { get; set; }
 	private List<IdentityRole>? roles = new();
 	private List<AppUser>? users = new();
+
+	public async Task addRoleClaim()
+	{
+		return;
+	}
+	public async Task addUserClaim()
+	{
+		return;
+	}
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -116,6 +145,7 @@ UserRoles
 			status = "User not found"; 
 			return; 
 		}
+		signInManager.SignOutAsync();
 		var result = await signInManager.CheckPasswordSignInAsync(user, input.passWord, false);
 		if (result.Succeeded)
 		{
@@ -155,6 +185,12 @@ UserRoles
 		await accountController.deleteRole(role);
 		NavigationManager.Refresh(true);
 	}
+	public async Task delRole(int r)
+	{
+		string role = roles[r].ToString();
+		await accountController.deleteRole(role);
+		NavigationManager.Refresh(true);
+	}
 	public async Task assignRole()
 	{
 		await accountController.assignRole(user2, role2);
@@ -171,5 +207,16 @@ UserRoles
 
 		[Required]
 		public string passWord { get; set; } = "";
+	}
+
+	private class ClaimModel
+	{
+		[Required]
+		public string label { get; set; } = "";
+		[Required]
+		public string type { get; set; } = "";
+		[Required]
+		public string value { get; set; } = "";
+
 	}
 }

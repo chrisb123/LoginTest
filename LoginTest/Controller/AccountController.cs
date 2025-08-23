@@ -32,6 +32,7 @@ namespace LoginTest.Controller
 		public async Task<List<string>> getRoles(string user)
 		{
 			AppUser appuser = await getUser(user);
+			if (appuser is null) return new List<string>();
 			return (List<string>)await _userManager.GetRolesAsync(appuser);
 		}
 		public async Task addRole(string role)
@@ -57,6 +58,8 @@ namespace LoginTest.Controller
 			AppUser appuser = await getUser(user);
 			await _userManager.AddToRoleAsync(appuser, role);
 		}
+
+		
 		
 	}
 
