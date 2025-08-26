@@ -1,0 +1,33 @@
+﻿@using LoginTest.Controller
+@using LoginTest.Data.Models
+@inject AccountController accountController
+@rendermode InteractiveServer
+
+ - Roles @user:
+@foreach(var r in roles)
+{
+	@r <button>Delete</button>
+}
+
+@code {
+	[Parameter]
+	public string user { get; set; } = string.Empty;
+	private List<string> roles = new();
+
+	protected override async Task OnParametersSetAsync()
+	{				     
+		Console.WriteLine("yyyyyyyyyyyyyyyy"); 
+		await updateUsers();
+	}
+	public async Task updateUsers()
+	{
+		Console.WriteLine("xxxxxxxxxxxxxxxxxxx");
+		roles = new();
+		List<string> useroles = await accountController.getRoles(user);
+		foreach (var i in useroles)
+		{
+			roles.Add(i);
+		}
+		StateHasChanged();
+	}
+}

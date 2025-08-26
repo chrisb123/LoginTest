@@ -50,12 +50,17 @@ Users<br />
 User:<input @bind="user2" />
 Role:<input @bind="role2" />
 <button @onclick="assignRole">Assign Role to user</button>
-<button @onclick="deleteUserRole">Delete Role from user</button>
 
-@foreach (var xuser in users)
+@foreach (UserModel xuser in users)
 {
+	var u = @xuser.user.UserName;
 	<br />
-	@xuser
+	<span>@u</span>
+	<span>: </span>
+	foreach(var r in xuser.roles)
+	{
+		@r <button @onclick="() => delUserRole(u,r)">Delete</button><span> - </span>
+	}
 }
 
 <hr />
@@ -70,12 +75,12 @@ Value:<input @bind="claim.value" />
 <hr />
 <p>Authorize View</p>
 <AuthorizeView>
-	<Authorized>
-		<p>User is authorised</p>
-	</Authorized>
-	<NotAuthorized>
-		<p>User not authorised</p>
-	</NotAuthorized>
+<Authorized>
+	<p>User is authorised</p>
+</Authorized>
+<NotAuthorized>
+	<p>User not authorised</p>
+</NotAuthorized>
 </AuthorizeView>
 
 @code {
@@ -94,140 +99,142 @@ Value:<input @bind="claim.value" />
 	private List<string> userRoles { get; set; } = new();
 	private string role2 { get; set; }
 	private List<IdentityRole>? roles = new();
-	private List<string>? users = new();
+	private List<UserModel>? users = new();
+	private UserRoles userRolesComponent;
 
 	public async Task addRoleClaim()
 	{
-		var result = await accountController.addRoleClaim(claim.label, claim.type, claim.value);
-		if (result.Succeeded)
-		{
-			status = "Claim added to role";	
-		} else
-		{
-			status = "Claim not added to role";
-		}
+var result = await accountController.addRoleClaim(claim.label, claim.type, claim.value);
+if (result.Succeeded)
+{
+	status = "Claim added to role";	
+} else
+{
+	status = "Claim not added to role";
+}
 	}
 	public async Task addUserClaim()
 	{
-		var result = await accountController.addUserClaim(claim.label, claim.type, claim.value);
-		if (result.Succeeded)
-		{
-			status = "Claim added to user";
-		}
-		else
-		{
-			status = "Claim not added to user";
-		}
+var result = await accountController.addUserClaim(claim.label, claim.type, claim.value);
+if (result.Succeeded)
+{
+	status = "Claim added to user";
+}
+else
+{
+	status = "Claim not added to user";
+}
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
 		roles = await accountController.getRoles();
-		updateUsers();
+		await updateUsers();
+		//users = await accountController.getUsers();
 
 		await base.OnInitializedAsync();
 	}
 
-	private async Task updateUsers()
+	public async Task updateUsers()
 	{
 		users = new();
-		List<AppUser> allusers = await accountController.getUsers();
-		foreach (AppUser u in allusers)
+		var userList = await accountController.getUsers();
+		foreach(AppUser u in userList)
 		{
-			var tempuser = $"{u.UserName} - ";
+			UserModel um = new();
 			List<string> useroles = await accountController.getRoles(u.UserName);
-			foreach (var i in useroles)
-			{
-				tempuser += i;
-				tempuser += ", ";
-			}
-			users.Add(tempuser);
+			um.user = u;
+			um.roles = useroles;
+			users.Add(um);
 		}
 		StateHasChanged();
 	}
 
+
+
 	public async Task registerAsync()
 	{
-		if (await accountController.getUser(input.userName) is null)
-		{
-			if ( (await accountController.register(input.userName, input.passWord)).Succeeded)
-			{
-				status = "Registered user";
-			} else
-			{
-				status = "Registration failed";
-			}
+if (await accountController.getUser(input.userName) is null)
+{
+	if ( (await accountController.register(input.userName, input.passWord)).Succeeded)
+	{
+		status = "Registered user";
+	} else
+	{
+		status = "Registration failed";
+	}
 
-		} else
-		{
-			status = "Cant register, user exists";
-		}
+} else
+{
+	status = "Cant register, user exists";
+}
 	}
 
 
 	public async Task loginAsync()
 	{
-		var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == input.userName.ToLower());
-		if (user == null) { 
-			status = "User not found"; 
-			return; 
-		}
-		signInManager.SignOutAsync();
-		var result = await signInManager.CheckPasswordSignInAsync(user, input.passWord, false);
-		if (result.Succeeded)
-		{
-			status = "User signed in";
-		} else
-		{
-			status = "User NOT signed in";
-		}
+var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == input.userName.ToLower());
+if (user == null) { 
+	status = "User not found"; 
+	return; 
+}
+signInManager.SignOutAsync();
+var result = await signInManager.CheckPasswordSignInAsync(user, input.passWord, false);
+if (result.Succeeded)
+{
+	status = "User signed in";
+} else
+{
+	status = "User NOT signed in";
+}
 
-		var s = await getAuthStateAsync(ASP);
+var s = await getAuthStateAsync(ASP);
 	}
 	public async Task refreshAuthStateAsync()
 	{
-		var s = await getAuthStateAsync(ASP);
-		currentAuthState = s;
+var s = await getAuthStateAsync(ASP);
+currentAuthState = s;
 	}
 
 	public async Task<string> getAuthStateAsync(AuthenticationStateProvider authStateProvider)
 	{
-		var authState = await authStateProvider.GetAuthenticationStateAsync();
-		var user = authState.User;
-		if (user.Identity is not null && user.Identity.IsAuthenticated)
-		{
-			return $"{user.Identity.Name} is authenticated";
-		} else
-		{
-			return "No user authenticated";
-		}
+var authState = await authStateProvider.GetAuthenticationStateAsync();
+var user = authState.User;
+if (user.Identity is not null && user.Identity.IsAuthenticated)
+{
+	return $"{user.Identity.Name} is authenticated";
+} else
+{
+	return "No user authenticated";
+}
 	}
 	public async Task addRole()
 	{
-		await accountController.addRole(role);
-		NavigationManager.Refresh(true);
+await accountController.addRole(role);
+NavigationManager.Refresh(true);
 	}
 	public async Task deleteRole()
 	{
-		await accountController.deleteRole(role);
-		NavigationManager.Refresh(true);
+await accountController.deleteRole(role);
+NavigationManager.Refresh(true);
 	}
 	public async Task delRole(int r)
 	{
-		string role = roles[r].ToString();
-		await accountController.deleteRole(role);
-		NavigationManager.Refresh(true);
+string role = roles[r].ToString();
+await accountController.deleteRole(role);
+NavigationManager.Refresh(true);
+	}
+	public async Task delUserRole(string user, string role)
+	{
+		await accountController.deleteAssignRole(user, role);
+		updateUsers();
 	}
 	public async Task assignRole()
 	{
 		await accountController.assignRole(user2, role2);
 		updateUsers();
 	}
-	public async Task deleteUserRole()
-	{
-		await accountController.deleteAssignRole(user2, role2);
-		updateUsers();
-	}
+
 	public async Task getUserRoles()
 	{
 		userRoles = await accountController.getRoles(user2);
@@ -250,6 +257,12 @@ Value:<input @bind="claim.value" />
 		public string type { get; set; } = "";
 		[Required]
 		public string value { get; set; } = "";
+
+	}
+	private class UserModel
+	{
+		public AppUser user { get; set;}
+		public List<string> roles { get; set;}
 
 	}
 }

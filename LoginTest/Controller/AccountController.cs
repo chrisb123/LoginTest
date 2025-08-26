@@ -77,6 +77,7 @@ namespace LoginTest.Controller
 		{
 			return await _userManager.AddClaimAsync(await getUser(user), new Claim(type, value));
 		}
+
 	}
 
 }
