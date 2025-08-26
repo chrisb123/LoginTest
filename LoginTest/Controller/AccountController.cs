@@ -1,6 +1,7 @@
 ﻿using LoginTest.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LoginTest.Controller
 {
@@ -58,9 +59,24 @@ namespace LoginTest.Controller
 			AppUser appuser = await getUser(user);
 			await _userManager.AddToRoleAsync(appuser, role);
 		}
-
+		public async Task deleteAssignRole(string user, string role)
+		{
+			AppUser appuser = await getUser(user);
+			await _userManager.RemoveFromRoleAsync(appuser, role);
+		}
+		public async Task<IdentityRole> getRole(string role)
+		{
+			return await _roleManager.FindByNameAsync(role);
+		}
+		public async Task<IdentityResult> addRoleClaim(string role, string type, string value)
+		{
+			return await _roleManager.AddClaimAsync(await getRole(role), new Claim(type, value));
+		}
 		
-		
+		public async Task<IdentityResult> addUserClaim(string user, string type, string value)
+		{
+			return await _userManager.AddClaimAsync(await getUser(user), new Claim(type, value));
+		}
 	}
 
 }

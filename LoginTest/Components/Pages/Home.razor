@@ -47,21 +47,15 @@ Role:<input @bind="role" />
 
 <hr />
 Users<br />
-<button @onclick="assignRole">Assign Role to user</button>
-Role:<input @bind="role2" />
 User:<input @bind="user2" />
-<button @onclick="getUserRoles">Get User Roles</button>
+Role:<input @bind="role2" />
+<button @onclick="assignRole">Assign Role to user</button>
+<button @onclick="deleteUserRole">Delete Role from user</button>
 
 @foreach (var xuser in users)
 {
 	<br />
 	@xuser
-}
-<br />
-UserRoles
-@foreach (var userRole in userRoles)
-{
-	@userRole
 }
 
 <hr />
@@ -100,23 +94,56 @@ Value:<input @bind="claim.value" />
 	private List<string> userRoles { get; set; } = new();
 	private string role2 { get; set; }
 	private List<IdentityRole>? roles = new();
-	private List<AppUser>? users = new();
+	private List<string>? users = new();
 
 	public async Task addRoleClaim()
 	{
-		return;
+		var result = await accountController.addRoleClaim(claim.label, claim.type, claim.value);
+		if (result.Succeeded)
+		{
+			status = "Claim added to role";	
+		} else
+		{
+			status = "Claim not added to role";
+		}
 	}
 	public async Task addUserClaim()
 	{
-		return;
+		var result = await accountController.addUserClaim(claim.label, claim.type, claim.value);
+		if (result.Succeeded)
+		{
+			status = "Claim added to user";
+		}
+		else
+		{
+			status = "Claim not added to user";
+		}
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
 		roles = await accountController.getRoles();
-		users = await accountController.getUsers();
+		updateUsers();
 
 		await base.OnInitializedAsync();
+	}
+
+	private async Task updateUsers()
+	{
+		users = new();
+		List<AppUser> allusers = await accountController.getUsers();
+		foreach (AppUser u in allusers)
+		{
+			var tempuser = $"{u.UserName} - ";
+			List<string> useroles = await accountController.getRoles(u.UserName);
+			foreach (var i in useroles)
+			{
+				tempuser += i;
+				tempuser += ", ";
+			}
+			users.Add(tempuser);
+		}
+		StateHasChanged();
 	}
 
 	public async Task registerAsync()
@@ -194,6 +221,12 @@ Value:<input @bind="claim.value" />
 	public async Task assignRole()
 	{
 		await accountController.assignRole(user2, role2);
+		updateUsers();
+	}
+	public async Task deleteUserRole()
+	{
+		await accountController.deleteAssignRole(user2, role2);
+		updateUsers();
 	}
 	public async Task getUserRoles()
 	{
