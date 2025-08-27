@@ -35,7 +35,7 @@ Welcome to your new app.
 <p>Auth state: @currentAuthState</p>
 
 <hr />
-Roles<br />
+<h4>Roles</h4>
 Role:<input @bind="role" />
 <button @onclick="addRole">Add Role</button>
 <table style="text-align: right;">
@@ -54,30 +54,36 @@ Role:<input @bind="role" />
 </table>
 
 <hr />
-Users<br />
-User:<input @bind="user2" />
-Role:<input @bind="role2" />
-<button @onclick="assignRole">Assign Role to user</button>
+<h4>Users</h4>
+Assign User:<input @bind="user2" />
+To Role:<input @bind="role2" />
+<button @onclick="assignRole">Execute</button>
+
 
 <table style="text-align: right;">
 @foreach (UserModel xuser in users)
 {
 	var u = @xuser.user.UserName;
 	<tr><td>
-	<span>@u</span>
+	<span>User: @u</span>
 	<span>:</span>
 			</td>
 	@foreach(var role in xuser.roles)
 	{
 		var r = role;
-		<td>@r <button @onclick="() => delUserRole(u, r)">Delete</button></td>
+		<td>Role: @r <button @onclick="() => delUserRole(u, r)">Delete</button></td>
+	}
+	@foreach (var claim in xuser.claims)
+	{
+		var c = claim;
+		<td>Claim: @c <button @onclick="() => delUserClaim(u, c)">Delete</button></td>
 	}
 	</tr>
 }
 </table>
 
 <hr />
-Add claims <br />
+<h4>Add claims</h4>
 Label:
 <input @bind="claim.label" />
 Type:<input @bind="claim.type" />
@@ -86,7 +92,7 @@ Value:<input @bind="claim.value" />
 <button @onclick="addUserClaim">Add claim to user</button>
 
 <hr />
-<p>Authorize View</p>
+<h4>Authorize View</h4>
 <AuthorizeView>
 <Authorized>
 	<p>User is authorised</p>
@@ -158,9 +164,9 @@ Value:<input @bind="claim.value" />
 		foreach(AppUser u in userList)
 		{
 			UserModel um = new();
-			List<string> useroles = await accountController.getRoles(u.UserName);
 			um.user = u;
-			um.roles = useroles;
+			um.roles = await accountController.getRoles(u.UserName);
+			um.claims = await accountController.getUserClaims(u.UserName);
 			users.Add(um);
 		}
 		StateHasChanged();
@@ -253,9 +259,15 @@ Value:<input @bind="claim.value" />
 	}
 	public async Task delUserRole(string user, string role)
 	{
-		await accountController.deleteAssignRole(user, role);
+		await accountController.deleteUserRole(user, role);
 		updateUsers();
 	}
+	public async Task delUserClaim(string user, Claim claim)
+	{
+		await accountController.deleteUserClaim(user, claim); 
+		updateUsers();
+	}
+
 	public async Task delRoleClaim(int r, Claim claim)
 	{
 		string role = roles[r].role.ToString();
@@ -263,6 +275,7 @@ Value:<input @bind="claim.value" />
 		await updateRoles();
 		return;
 	}
+	
 	public async Task assignRole()
 	{
 		await accountController.assignRole(user2, role2);
@@ -297,7 +310,7 @@ Value:<input @bind="claim.value" />
 	{
 		public AppUser user { get; set;}
 		public List<string> roles { get; set;}
-
+		public IList<Claim> claims { get; set; }
 	}
 	private class RoleClaims
 	{

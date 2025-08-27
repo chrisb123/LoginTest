@@ -59,10 +59,16 @@ namespace LoginTest.Controller
 			AppUser appuser = await getUser(user);
 			await _userManager.AddToRoleAsync(appuser, role);
 		}
-		public async Task deleteAssignRole(string user, string role)
+		public async Task deleteUserRole(string user, string role)
 		{
 			AppUser appuser = await getUser(user);
 			await _userManager.RemoveFromRoleAsync(appuser, role);
+		}
+		
+		public async Task deleteUserClaim(string user, Claim claim)
+		{
+			AppUser appuser = await getUser(user);
+			await _userManager.RemoveClaimAsync(appuser, claim);
 		}
 		public async Task<IdentityRole> getRole(string role)
 		{
@@ -84,6 +90,10 @@ namespace LoginTest.Controller
 		public async Task delRoleClaim(string role, Claim claim)
 		{
 			await _roleManager.RemoveClaimAsync(await getRole(role), claim);
+		}
+		public async Task<IList<Claim>> getUserClaims(string user)
+		{
+			return await _userManager.GetClaimsAsync(await getUser(user));
 		}
 	}
 
