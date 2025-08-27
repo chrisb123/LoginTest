@@ -77,7 +77,14 @@ namespace LoginTest.Controller
 		{
 			return await _userManager.AddClaimAsync(await getUser(user), new Claim(type, value));
 		}
-
+		public async Task<IList<Claim>> getRoleClaims(string role)
+		{
+			return await _roleManager.GetClaimsAsync(await getRole(role));
+		}
+		public async Task delRoleClaim(string role, Claim claim)
+		{
+			await _roleManager.RemoveClaimAsync(await getRole(role), claim);
+		}
 	}
 
 }
