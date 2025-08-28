@@ -2,8 +2,10 @@ using LoginTest.Components;
 using LoginTest.Controller;
 using LoginTest.Data;
 using LoginTest.Data.Models;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using LoginTest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +55,10 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 
 builder.Services.AddScoped<AccountController>();
+
+builder.Services.AddScoped<CustomAuthenticationService>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<ExampleService>();
 
 var app = builder.Build();
 

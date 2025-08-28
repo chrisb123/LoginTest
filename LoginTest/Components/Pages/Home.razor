@@ -12,6 +12,9 @@
 @inject SignInManager<AppUser> signInManager
 @inject AuthenticationStateProvider ASP
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ExampleService ExampleService
+@inject CustomAuthenticationService AuthService
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -19,6 +22,7 @@
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+<br />@example
 <hr />
 
 <EditForm Model="input" method="post" FormName="login">
@@ -120,6 +124,7 @@ Value:<input @bind="claim.value" />
 	private List<RoleClaims>? roles = new();
 	private List<UserModel>? users = new();
 	private UserRoles userRolesComponent;
+	private string example = string.Empty;
 
 	public async Task addRoleClaim()
 	{
@@ -222,6 +227,17 @@ Value:<input @bind="claim.value" />
 		}
 
 		var s = await getAuthStateAsync(ASP);
+
+
+		// Is there an automated version of this code?
+		var claims2 = await userManager.GetClaimsAsync(user);
+		//claims2.Add(new Claim(ClaimTypes.Name, user.UserName));
+		foreach(var role in await userManager.GetRolesAsync(user))
+		claims2.Add(new Claim(ClaimTypes.Role, role));
+		var newUser = new ClaimsPrincipal(new ClaimsIdentity(claims2, "Authentication"));
+		AuthService.CurrentUser = newUser;
+		// How do make auth state perisistent?
+
 	}
 	public async Task refreshAuthStateAsync()
 	{
@@ -273,7 +289,6 @@ Value:<input @bind="claim.value" />
 		string role = roles[r].role.ToString();
 		await accountController.delRoleClaim(role, claim);
 		await updateRoles();
-		return;
 	}
 	
 	public async Task assignRole()
@@ -286,7 +301,14 @@ Value:<input @bind="claim.value" />
 	{
 		userRoles = await accountController.getRoles(user2);
 	}
-
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			example += await ExampleService.ExampleMethod(AuthenticationStateProvider);
+			StateHasChanged();
+		}
+	}
 	private sealed class InputModel
 	{
 		[Required]
